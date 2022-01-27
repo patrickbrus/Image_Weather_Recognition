@@ -29,7 +29,7 @@
         </div>
         
         <div class="bottomdiv">
-            <h3> Overview Past Predictions </h3>
+            <h3> Overview Past Predictions <button id="load-button">Load</button></h3>
             <p style="font-weight:bold"> Dew: <span id="summary-dew" style="font-weight:normal"></span></p>
             <p style="font-weight:bold"> Fogsmog: <span id="summary-fogsmog" style="font-weight:normal"></span></p>
             <p style="font-weight:bold"> Frost: <span id="summary-frost" style="font-weight:normal"></span></p>
@@ -70,6 +70,23 @@
                 $("#final-prediction").text(response.prediction.winning_class);
                 $("#final-score").text(response.prediction.confidence.toFixed(6));
                 $("#trained-cars").text(response.prediction.trained_cars);
+                console.log(response);
+                });
+            });
+
+            $("#load-button").click(function(event) {
+                $.post("/load", function(response) {
+                $("#summary-dew").text(response.dew);
+                $("#summary-fogsmog").text(response.fogsmog);
+                $("#summary-frost").text(response.frost);
+                $("#summary-glaze").text(response.glaze);
+                $("#summary-hail").text(response.hail);
+                $("#summary-lightning").text(response.lightning);
+                $("#summary-rain").text(response.rain);
+                $("#summary-rainbow").text(response.rainbow);
+                $("#summary-rime").text(response.rime);
+                $("#summary-sandstorm").text(response.sandstorm);
+                $("#summary-snow").text(response.snow);
                 console.log(response);
                 });
             });

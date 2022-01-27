@@ -7,6 +7,7 @@ import tensorflow as tf
 from tensorflow import keras
 import tensorflow_addons as tfa
 import pandas as pd
+import redis
 import json
 import csv
 from tensorflow.keras import backend as K
@@ -15,6 +16,9 @@ from flask import jsonify
 from flask import Flask, render_template
 
 application = Flask(__name__)
+
+# create redis instance
+redis_inst = redis.Redis(host="redis-server")
 
 # create dictionary with classes to later load the summary data from Redis database
 summary_classes_dict = dict()
@@ -37,6 +41,35 @@ def load_index_to_label_mapping():
     with open(FILEPATH_JSON_INDEX_CLASS, "r") as json_file:
         index_to_label_dict = json.load(json_file)
 
+def init_classes_dict():
+    global summary_classes_dict
+    for value in index_to_label_dict.values():
+        if value not in summary_classes_dict.keys():
+            summary_classes_dict[value] = 0
+
+def setup_redis_db():
+    # loop over summary_classes_dict and add key-value pair if not already exists
+    for key, value in summary_classes_dict.items():
+        if redis_inst.get(key) == None:
+            redis_inst.set(key, value)
+
+def load_redis_db_vals():
+    results_dict = {}
+    for key in summary_classes_dict.keys():
+        results_dict[key] = int(redis_inst.get(key))
+    
+    return results_dict
+
+def update_redis_db(key):
+    # get current value for key
+    current_val = int(redis_inst.get(key))
+    
+    # increment current value
+    current_val += 1
+
+    # write to redis database again
+    redis_inst.set(key, str(current_val))
+
 def preprocess_image(image, target_size):
     if image.mode != "RGB":
         image = image.convert("RGB")
@@ -49,6 +82,13 @@ def preprocess_image(image, target_size):
     image = np.expand_dims(image, axis=0)
 
     return image
+
+@application.route("/load", methods=["POST"])
+def send_summary():
+    print("load and send past prediction summary")
+    response = load_redis_db_vals()
+    return jsonify(response)
+
 
 @application.route("/predict", methods=["POST"])
 def predict():
@@ -65,6 +105,9 @@ def predict():
     winning_class = index_to_label_dict[str(winning_class_index)]
     confidence = prediction[winning_class_index].astype(float)
 
+    # update redis database
+    update_redis_db(winning_class)
+
     response = {
         'prediction': {
             'winning_class': winning_class,
@@ -76,6 +119,12 @@ def predict():
 def init_app():
     # load index to label mapping
     load_index_to_label_mapping()
+
+    # initialize summary_dict
+    init_classes_dict()
+
+    # setup redis database
+    setup_redis_db()
 
     # load trained tensorflow model
     print(" * Loading Keras model...")
