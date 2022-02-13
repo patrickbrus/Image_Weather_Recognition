@@ -1,0 +1,24 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      component: image-weather-recognition
+  template:
+    metadata:
+      labels:
+        component: image-weather-recognition
+    spec:
+      containers:
+        - name: image-weather-recognition
+          image: ga63qes/image-weather-recognition
+          ports:
+            - containerPort: 5000
+          env:
+            - name: REDIS_HOST
+              value: redis-cluster-ip-service
+            - name: REDIS_PORT
+              value: '6379'
