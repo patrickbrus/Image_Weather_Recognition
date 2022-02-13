@@ -18,7 +18,7 @@ from flask import Flask, render_template
 application = Flask(__name__)
 
 # create redis instance
-redis_inst = redis.Redis(host="redis-server")
+redis_inst = redis.Redis(host="redis-cluster-ip-service")
 
 # create dictionary with classes to later load the summary data from Redis database
 summary_classes_dict = dict()
